@@ -1,0 +1,24 @@
+---
+- &1 !ruby/object:Account
+  errors: []
+  file_path: accounts.yml
+  console: !ruby/object:Console
+    account: *1
+  validator: !ruby/object:Validators::Account
+    errors: []
+    account: *1
+    name: Artem
+    age: 29
+    login: test
+    password: '123456'
+  name: Artem
+  age: 29
+  card:
+  - !ruby/object:CreditCard
+    card: !ruby/object:CreditCards::Usual
+      type: usual
+      balance: 50.0
+      number: '6925407151300257'
+  login: test
+  password: '123456'
+  current_account: *1
