@@ -1,6 +1,7 @@
 module CreditCards # TODO: rename to CreditCardTypes maybe remove
   class Usual < Base # TODO: refactor to be equal
     attr_accessor :balance
+    attr_reader :number, :type
 
     def initialize
       @type = 'usual'

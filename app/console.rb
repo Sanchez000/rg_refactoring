@@ -8,8 +8,8 @@ class Console
     - If you want to exit - press `exit`
   HELLO_MESSAGE
 
-  def initialize #(account)
-    @account = Account.new(self) # account
+  def initialize
+    @account = Account.new(self)
   end
 
   def hello
@@ -31,7 +31,7 @@ class Console
       case command
       when 'SC' then @account.show_cards
       when 'CC' then @account.create_card#.card.create move to separete class Card
-      when 'DC' then @account.card.destroy
+      when 'DC' then @account.destroy_card#.card.destroy
       when 'PM' then @account.card.put_money
       when 'WM' then @account.card.withdraw_money
       when 'SM' then @account.card.send_money
@@ -43,24 +43,23 @@ class Console
     end
   end
 
-  def name_input
-    puts 'Enter your name'
-    read_from_console
+  def interviewer(personal_data)
+    puts "Enter your #{personal_data}"
+    gets.chomp
   end
 
-  def age_input
-    puts 'Enter your age'
-    read_from_console.to_i
+  def first_ask_destroy_card(cards_array)
+    puts 'If you want to delete:'
+    cards_array.each_with_index do |card, index|
+      puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
+    end
+    puts "press `exit` to exit\n"
+    gets.chomp
   end
 
-  def login_input
-    puts 'Enter your login'
-    read_from_console
-  end
-
-  def password_input
-    puts 'Enter your password'
-    read_from_console
+  def confirm_delete_card(card_number)
+    puts "Are you sure you want to delete #{card_number}?[y/n]"
+    gets.chomp
   end
 
   def credit_card_type
@@ -71,15 +70,11 @@ class Console
     - Virtual card. 1$ tax on card INCOME. 1$ tax on SENDING money from this card. 12% tax on WITHDRAWING money. For creation this card - press `virtual`
     - For exit - press `exit`
     MENU_OF_CARD_TYPES
-    read_from_console
+    gets.chomp
     # not forget to add loop
   end
 
   private
-
-  def read_from_console
-    gets.chomp
-  end
 
   def main_menu_message
     <<~MAIN_MENU_MESSAGE

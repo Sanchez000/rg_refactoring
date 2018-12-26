@@ -1,4 +1,5 @@
-#class Validators::Account
+require 'pry'
+
 module Validators
 class Account
   attr_reader :errors
@@ -42,20 +43,25 @@ class Account
   end
 
   def validate_login
-    @errors.push('Login must present') if @login.empty?
-    @errors.push('Login must be longer then 4 symbols') if @login.length < 4
-    @errors.push('Login must be shorter then 20 symbols') if @login.length > 20
+    size_checker(@login, 'Login', 4, 20)
     @errors.push('Such account is already exists') if @account.accounts.map(&:login).include?(@login)
   end
 
   def validate_password
-    @errors.push('Password must present') if @password.empty?
-    @errors.push('Password must be longer then 6 symbols') if @password.length < 6
-    @errors.push('Password must be shorter then 30 symbols') if @password.length > 30
+    size_checker(@password, 'Password', 6, 30)
   end
 
   def validate_age
-    @errors.push('Your Age must be greeter then 23 and lower then 90') unless @age.between?(23, 89)
+    unless @age.between?(23, 90)
+      @errors.push('Your Age must be greeter then 23 and lower then 90')
+    end
+  end
+
+  def size_checker(entity, entity_name, min_size, max_size)
+    @errors.push("#{entity_name} must present") if entity.empty?
+    unless entity.length.between?(min_size, max_size)
+      @errors.push("#{entity_name} must be greeter then #{min_size} and lower then #{max_size} symbols")
+    end
   end
 end
 end

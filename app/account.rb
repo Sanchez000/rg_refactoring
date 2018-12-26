@@ -10,17 +10,15 @@ class Account
   attr_reader :current_account, :name, :password, :login, :age
   PATH_TO_DB = 'accounts.yml'
 
-  def initialize(console)#(file_path = PATH_TO_DB)
+  def initialize(console)
     @errors = []
-    @file_path = PATH_TO_DB#file_path
-    #@console = Console.new(self)
-    #@console = Console.new
+    @file_path = PATH_TO_DB
     @console = console
     @validator = Validators::Account.new
   end
 
   def show_cards
-    #binding.pry # @current_account.card[0].card.balance/type/number
+    #binding.pry
     if @current_account.card.any?
       @current_account.card.each do |card|
         #puts "- #{card[:number]}, #{card[:type]}" #
@@ -34,10 +32,10 @@ class Account
 
   def create
     loop do
-      @name = @console.name_input
-      @age = @console.age_input
-      @login = @console.login_input
-      @password = @console.password_input
+      @name = @console.interviewer('name')
+      @age = @console.interviewer('age').to_i
+      @login = @console.interviewer('login')
+      @password = @console.interviewer('password')
 
       @validator.validate(self)
 
@@ -72,16 +70,50 @@ class Account
     puts "Card with type - #{type} created"
   end
 
+
+  def destroy_card
+    loop do
+      if @current_account.card.any?
+        cards_array = @current_account.card
+        answer = @console.first_ask_destroy_card(cards_array)
+        break if answer == 'exit'
+        if answer&.to_i.between?(0, cards_array.length)
+          confirm_delete = @console.confirm_delete_card(cards_array[answer&.to_i - 1].card.number)
+          if confirm_delete == 'y'
+            cards_array.delete_at(answer&.to_i - 1)
+            save_account
+            break
+          else
+            return
+          end
+        else
+          puts "You entered wrong number!\n"
+        end
+      else
+        puts "There is no active cards!\n"
+        break
+      end
+    end
+  end
+
+  def save_account
+    new_accounts = []
+    accounts.each do |account|
+      if account.login == @current_account.login
+        new_accounts.push(@current_account)
+      else
+        new_accounts.push(account)
+      end
+    end
+    store_accounts(new_accounts)
+  end
+
   def load
     loop do
-      if !accounts.any?
-        return create_the_first_account
-      end
+      return create_the_first_account if !accounts.any?
 
-      puts 'Enter your login'
-      login = gets.chomp
-      puts 'Enter your password'
-      password = gets.chomp
+      login = @console.interviewer('login')
+      password = @console.interviewer('password')
 
       if accounts.map { |a| { login: a.login, password: a.password } }.include?({ login: login, password: password })
         a = accounts.select { |a| login == a.login }.first
@@ -97,11 +129,12 @@ class Account
 
   def create_the_first_account
     puts 'There is no active accounts, do you want to be the first?[y/n]'
-    if gets.chomp == 'y'
-      return create
-    else
-      return console
-    end
+    return create if gets.chomp == 'y'
+
+    return console
+    #else
+    #
+    #end
   end
 
   def destroy
@@ -109,10 +142,10 @@ class Account
     a = gets.chomp
     if a == 'y'
       new_accounts = []
-      accounts.each do |account|
-        if account.login == @current_account.login
+      accounts.each do |ac|
+        if ac.login == @current_account.login
         else
-          new_accounts.push(account)
+          new_accounts.push(ac)
         end
       end
       store_accounts(new_accounts)
