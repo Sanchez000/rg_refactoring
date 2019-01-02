@@ -31,8 +31,8 @@ class Console
       case command
       when 'SC' then @account.show_cards
       when 'CC' then @account.create_card#.card.create move to separete class Card
-      when 'DC' then @account.destroy_card#.card.destroy
-      when 'PM' then @account.card.put_money
+      when 'DC' then @account.destroy_card
+      when 'PM' then @account.put_money
       when 'WM' then @account.card.withdraw_money
       when 'SM' then @account.card.send_money
       when 'DA' then @account.destroy && exit
@@ -50,6 +50,10 @@ class Console
 
   def first_ask_destroy_card(cards_array)
     puts 'If you want to delete:'
+    listing_cards(cards_array)
+  end
+
+  def listing_cards(cards_array)
     cards_array.each_with_index do |card, index|
       puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
     end
@@ -57,9 +61,9 @@ class Console
     gets.chomp
   end
 
-  def confirm_delete_card(card_number)
-    puts "Are you sure you want to delete #{card_number}?[y/n]"
-    gets.chomp
+  def are_you_sure?(what)
+    puts "Are you sure you want to #{what} ?[y/n]" # delete #{card_number}?[y/n]
+    gets.chomp == 'y'
   end
 
   def credit_card_type

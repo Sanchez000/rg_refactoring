@@ -1,5 +1,7 @@
 require_relative 'credits_cards/base'
 require_relative 'credits_cards/usual'
+require_relative 'credits_cards/capitalist'
+require_relative 'credits_cards/virtual'
 
 class CreditCard
   attr_reader :card
@@ -7,7 +9,7 @@ class CreditCard
     usual
     capitalist
     virtual
-  ]
+  ].freeze
 
   def initialize(type)
     case type
