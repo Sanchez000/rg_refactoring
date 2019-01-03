@@ -13,11 +13,11 @@ module CreditCards
       amount * 0.88
     end
 
-    def put_tax
+    def put_tax(*)
       1
     end
 
-    def sender_tax
+    def sender_tax(*)
       1
     end
   end

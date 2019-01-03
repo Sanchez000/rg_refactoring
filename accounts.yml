@@ -15,10 +15,5 @@
   age: 29
   login: test
   password: '123456'
-  card:
-  - !ruby/object:CreditCard
-    card: !ruby/object:CreditCards::Usual
-      type: usual
-      balance: 50.0
-      number: '7964711131659275'
+  cards: []
   current_account: *1

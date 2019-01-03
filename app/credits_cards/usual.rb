@@ -17,7 +17,7 @@ module CreditCards # TODO: rename to CreditCardTypes maybe remove
       amount * 0.2
     end
 
-    def sender_tax
+    def sender_tax(*)
       20
     end
   end

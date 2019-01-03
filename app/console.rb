@@ -51,6 +51,7 @@ class Console
   def first_ask_destroy_card(cards_array)
     puts 'If you want to delete:'
     listing_cards(cards_array)
+    gets.chomp
   end
 
   def listing_cards(cards_array)
@@ -58,12 +59,29 @@ class Console
       puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
     end
     puts "press `exit` to exit\n"
-    gets.chomp
   end
 
   def are_you_sure?(what)
     puts "Are you sure you want to #{what} ?[y/n]" # delete #{card_number}?[y/n]
     gets.chomp == 'y'
+  end
+
+  def wrong_number
+    puts "You entered wrong number!\n"
+  end
+
+  def create_account?
+    puts 'There is no active accounts, do you want to be the first?[y/n]'
+    gets.chomp == 'y'
+  end
+
+  def input_amount
+    puts 'Input the amount of money you want to put on your card'
+    gets.chomp&.to_i
+  end
+
+  def payment_result(amount, card)
+    puts "Money #{amount} was put on #{card.number}.Balance: #{card.balance}.Tax: #{card.put_tax(amount)}"
   end
 
   def credit_card_type

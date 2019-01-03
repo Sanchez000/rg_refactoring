@@ -3,10 +3,11 @@ require 'pry'
 
 require_relative 'console'
 require_relative 'credit_card'
+require_relative 'credits_cards/usual'
 require_relative 'validators/account_validator'
 
 class Account
-  attr_accessor :card
+  attr_accessor :cards
   attr_reader :current_account, :name, :password, :login, :age
   PATH_TO_DB = 'accounts.yml'.freeze
 
@@ -18,8 +19,8 @@ class Account
   end
 
   def show_cards
-    if @current_account.card.any?
-      @current_account.card.each do |card|
+    if @current_account.cards.any?
+      @current_account.cards.each do |card|
         puts "- #{card.card.number}, #{card.card.type}"
       end
     else
@@ -42,7 +43,7 @@ class Account
       @validator.puts_errors
     end
 
-    @card = []
+    @cards = []
     new_accounts = accounts << self
     @current_account = self
     store_accounts(new_accounts)
@@ -51,27 +52,23 @@ class Account
 
   def create_card
     type = @console.credit_card_type
-    new_card = CreditCard.new(type)
-    cards = @current_account.card << new_card
-    @current_account.card = cards
+    new_cards = @current_account.cards << CreditCard.new(type)
+    @current_account.cards = new_cards
     save_account
-    puts "Card with type - #{type} created"
   end
 
   def destroy_card
     loop do
-      unless @current_account.card.any?
+      unless @current_account.cards.any?
         puts "There is no active cards!\n"
         break
       end
-      cards_array = @current_account.card
+      cards_array = @current_account.cards
       answer = @console.first_ask_destroy_card(cards_array)
       break if answer == 'exit'
 
       answer = answer&.to_i
-      unless answer.between?(0, cards_array.length)
-        puts "You entered wrong number!\n"
-      end
+      @console.wrong_number unless answer.between?(0, cards_array.length)
       return unless @console.are_you_sure?("delete #{cards_array[answer - 1].card.number}")
 
       cards_array.delete_at(answer - 1)
@@ -98,9 +95,8 @@ class Account
 
       login = @console.interviewer('login')
       password = @console.interviewer('password')
-
-      if accounts.map { |a| { login: a.login, password: a.password } }.include?({ login: login, password: password })
-        @current_account = accounts.select { |a| login == a.login }.first
+      if accounts.select { |a| login == a.login && password = a.password }.any?
+        @current_account = accounts.select { |account| login == account.login }.first
         break
       else
         puts 'There is no account with given credentials'
@@ -111,8 +107,7 @@ class Account
   end
 
   def create_the_first_account
-    puts 'There is no active accounts, do you want to be the first?[y/n]'
-    return create if gets.chomp == 'y'
+    return create if @console.create_account?
 
     @console.hello
   end
@@ -134,42 +129,32 @@ class Account
 
   def put_money
     puts 'Choose the card for putting:'
-    puts "There is no active cards!\n" unless @current_account.card.any?
-    answer = @console.listing_cards(@current_account.card)
+    puts "There is no active cards!\n" unless @current_account.cards.any?
+    @console.listing_cards(@current_account.cards)
+    loop do
+      answer = gets.chomp
+      break if answer == 'exit'
 
-      loop do
-        answer = gets.chomp
-        break if answer == 'exit'
+      list_number = answer&.to_i
+      return @console.wrong_number unless list_number.between?(0, @current_account.cards.length)
 
-        answer = answer&.to_i
-        unless answer.between?(0, @current_account.card.length)
-          puts "You entered wrong number!\n"
-          return
-        end
+      get_amount(list_number, @current_account.cards[card_index - 1].card)
+    end
+  end
 
-          current_card = @current_account.card[answer - 1]
+  def get_amount(card_index, current_card)
+    loop do
+      amount = @console.input_amount
+      return puts 'You must input correct amount of money' if amount.negative?
 
-          loop do
-            puts 'Input the amount of money you want to put on your card'
-            a2 = gets.chomp
-            unless a2&.to_i > 0
-              puts 'You must input correct amount of money'
-              return
-            end
+      tax = current_card.put_tax(amount)
+      return puts 'Your tax is higher than input amount' if tax >= amount
 
-              if put_tax(current_card.card.type, current_card.card.balance, current_card.card.number, a2&.to_i.to_i) >= a2&.to_i.to_i
-                puts 'Your tax is higher than input amount'
-                return
-              else
-                new_money_amount = current_card[:balance] + a2&.to_i.to_i - put_tax(current_card[:type], current_card[:balance], current_card[:number], a2&.to_i.to_i)
-                current_card[:balance] = new_money_amount
-                @current_account.card[answer&.to_i.to_i - 1] = current_card
-                save_account
-                puts "Money #{a2&.to_i.to_i} was put on #{current_card[:number]}. Balance: #{current_card[:balance]}. Tax: #{put_tax(current_card[:type], current_card[:balance], current_card[:number], a2&.to_i.to_i)}"
-                return
-              end
-          end
-      end
+      current_card.balance = current_card.balance + amount - tax
+      @current_account.cards[card_index - 1] = current_card
+      save_account
+      return @console.payment_result(amount, current_card)
+    end
   end
 
   private
