@@ -30,24 +30,25 @@ class Account
   end
 
   def create
-    loop do
-      @name = @console.interviewer('name')
-      @age = @console.interviewer('age').to_i
-      @login = @console.interviewer('login')
-      @password = @console.interviewer('password')
-
-      @validator.validate(self)
-
-      break if @validator.valid?
-
-      @validator.puts_errors
-    end
-
+    set_account_data
     @cards = []
     new_accounts = accounts << self
     @current_account = self
     store_accounts(new_accounts)
     @console.main_menu
+  end
+
+  def set_account_data
+    loop do
+      @name = @console.interviewer('name')
+      @age = @console.interviewer('age').to_i
+      @login = @console.interviewer('login')
+      @password = @console.interviewer('password')
+      @validator.validate(self)
+      break if @validator.valid?
+
+      @validator.puts_errors
+    end
   end
 
   def create_card
@@ -58,33 +59,26 @@ class Account
   end
 
   def destroy_card
-    loop do
-      unless @current_account.cards.any?
-        puts "There is no active cards!\n"
-        break
-      end
-      cards_array = @current_account.cards
-      answer = @console.first_ask_destroy_card(cards_array)
-      break if answer == 'exit'
+    cards_array = @current_account.cards
+    return @console.no_cards unless @current_account.cards.any?
 
-      answer = answer&.to_i
-      @console.wrong_number unless answer.between?(0, cards_array.length)
-      return unless @console.are_you_sure?("delete #{cards_array[answer - 1].card.number}")
+    answer = @console.first_ask_destroy_card(cards_array)
+    return if answer == 'exit'
 
-      cards_array.delete_at(answer - 1)
-      save_account
-      break
-    end
+    answer = answer&.to_i
+    index = answer - 1
+    return @console.wrong_number unless answer.between?(0, cards_array.length)
+
+    return unless @console.are_you_sure?("delete #{cards_array[index].card.number}")
+
+    cards_array.delete_at(index)
+    save_account
   end
 
   def save_account
     new_accounts = []
     accounts.each do |account|
-      if account.login == @current_account.login
-        new_accounts.push(@current_account)
-      else
-        new_accounts.push(account)
-      end
+      account.login == @current_account.login ? new_accounts.push(@current_account) : new_accounts.push(account)
     end
     store_accounts(new_accounts)
   end
@@ -95,15 +89,16 @@ class Account
 
       login = @console.interviewer('login')
       password = @console.interviewer('password')
-      if accounts.select { |a| login == a.login && password = a.password }.any?
-        @current_account = accounts.select { |account| login == account.login }.first
-        break
-      else
-        puts 'There is no account with given credentials'
-        next
-      end
+      next @console.no_accounts unless find_account_by_login(login, password).any?
+
+      @current_account = find_account_by_login(login, password).first
+      break
     end
     @console.main_menu
+  end
+
+  def find_account_by_login(login, password)
+    accounts.select { |account| login == account.login && password == account.password }
   end
 
   def create_the_first_account
@@ -127,33 +122,72 @@ class Account
     YAML.load_file(PATH_TO_DB)
   end
 
+  def cards_present?
+    return @console.no_cards unless @current_account.cards.any?
+  end
+
   def put_money
-    puts 'Choose the card for putting:'
-    puts "There is no active cards!\n" unless @current_account.cards.any?
-    @console.listing_cards(@current_account.cards)
+    cards_array = @current_account.cards
+    return @console.no_cards unless cards_array.any?
+
+    @console.menu_with_cards(cards_array, 'putting')
     loop do
       answer = gets.chomp
       break if answer == 'exit'
 
       list_number = answer&.to_i
-      return @console.wrong_number unless list_number.between?(0, @current_account.cards.length)
+      return @console.wrong_number unless list_number.between?(0, cards_array.length)
 
-      get_amount(list_number, @current_account.cards[card_index - 1].card)
+      get_amount(list_number, cards_array[list_number - 1])
     end
   end
 
   def get_amount(card_index, current_card)
     loop do
-      amount = @console.input_amount
+      amount = @console.input_amount_to('put on your card')
       return puts 'You must input correct amount of money' if amount.negative?
 
-      tax = current_card.put_tax(amount)
+      tax = current_card.card.put_tax(amount)
       return puts 'Your tax is higher than input amount' if tax >= amount
 
-      current_card.balance = current_card.balance + amount - tax
+      current_card.card.balance = current_card.card.balance + amount - tax
       @current_account.cards[card_index - 1] = current_card
       save_account
-      return @console.payment_result(amount, current_card)
+      return @console.payment_result(amount, current_card.card, 'put')
+    end
+  end
+
+  def withdraw_money
+    cards_array = @current_account.cards
+    return @console.no_cards unless cards_array.any?
+
+    @console.menu_with_cards(cards_array, 'withdrawing')
+
+    loop do
+      answer = gets.chomp
+      break if answer == 'exit'
+
+      list_number = answer&.to_i
+      return @console.wrong_number unless list_number.between?(0, cards_array.length)
+
+      get_amount_to_withdraw(list_number, cards_array[list_number - 1])
+    end
+  end
+
+  def get_amount_to_withdraw(card_index, current_card)
+    loop do
+      amount = @console.input_amount_to('withdraw')
+      amount = amount&.to_i
+
+      return puts 'You must input correct amount of $' unless amount.positive?
+
+      money_left = current_card.card.balance - amount - current_card.card.withdraw_tax(amount)
+      return puts "You don't have enough money on card for such operation" unless money_left.positive?
+
+      current_card.card.balance = money_left
+      @current_account.card[card_index - 1] = current_card
+      save_account
+      return @console.payment_result(amount, current_card.card, 'withdraw')
     end
   end
 

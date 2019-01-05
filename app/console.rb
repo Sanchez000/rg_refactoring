@@ -30,7 +30,7 @@ class Console
       command = gets.chomp
       case command
       when 'SC' then @account.show_cards
-      when 'CC' then @account.create_card#.card.create move to separete class Card
+      when 'CC' then @account.create_card # .card.create move to separete class Card
       when 'DC' then @account.destroy_card
       when 'PM' then @account.put_money
       when 'WM' then @account.card.withdraw_money
@@ -54,11 +54,20 @@ class Console
     gets.chomp
   end
 
+  def no_accounts
+    puts 'There is no account with given credentials'
+  end
+
   def listing_cards(cards_array)
     cards_array.each_with_index do |card, index|
       puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
     end
     puts "press `exit` to exit\n"
+  end
+
+  def menu_with_cards(cards, option)
+    puts "Choose the card for #{option}:" # putting
+    listing_cards(cards)
   end
 
   def are_you_sure?(what)
@@ -75,13 +84,22 @@ class Console
     gets.chomp == 'y'
   end
 
-  def input_amount
-    puts 'Input the amount of money you want to put on your card'
+  def no_cards
+    puts "There is no active cards!\n"
+  end
+
+  def input_amount_to(operation)
+    puts "Input the amount of money you want to #{operation}"
     gets.chomp&.to_i
   end
 
-  def payment_result(amount, card)
-    puts "Money #{amount} was put on #{card.number}.Balance: #{card.balance}.Tax: #{card.put_tax(amount)}"
+  def payment_result(amount, card, operation_type)
+    case operation_type
+    when 'put' then puts "Money #{amount} was put on #{card.number}.Balance: #{card.balance}.
+      Tax: #{card.put_tax(amount)}"
+    when 'withdraw' then puts "Money #{amount} withdrawed from #{card.number}$. Money left: #{card.balance}$.
+      Tax: #{card.withdraw_tax(amount)}$"
+    end
   end
 
   def credit_card_type
