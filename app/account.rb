@@ -185,7 +185,7 @@ class Account
       return puts "You don't have enough money on card for such operation" unless money_left.positive?
 
       current_card.card.balance = money_left
-      @current_account.card[card_index - 1] = current_card
+      @current_account.cards[card_index - 1] = current_card
       save_account
       return @console.payment_result(amount, current_card.card, 'withdraw')
     end

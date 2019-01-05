@@ -33,8 +33,8 @@ class Console
       when 'CC' then @account.create_card # .card.create move to separete class Card
       when 'DC' then @account.destroy_card
       when 'PM' then @account.put_money
-      when 'WM' then @account.card.withdraw_money
-      when 'SM' then @account.card.send_money
+      when 'WM' then @account.withdraw_money
+      when 'SM' then @account.send_money
       when 'DA' then @account.destroy && exit
       when 'exit' then exit
       else
