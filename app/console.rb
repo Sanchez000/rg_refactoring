@@ -54,10 +54,6 @@ class Console
     gets.chomp
   end
 
-  def no_accounts
-    puts 'There is no account with given credentials'
-  end
-
   def listing_cards(cards_array)
     cards_array.each_with_index do |card, index|
       puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
@@ -80,6 +76,15 @@ class Console
     gets.chomp == 'y'
   end
 
+  def create_account?
+    puts 'There is no active accounts, do you want to be the first?[y/n]'
+    gets.chomp == 'y'
+  end
+
+  def no_accounts
+    puts 'There is no account with given credentials'
+  end
+
   def wrong_number
     puts "You entered wrong number!\n"
   end
@@ -98,11 +103,6 @@ class Console
 
   def input_correct_amount
     puts 'You must input correct amount of money'
-  end
-
-  def create_account?
-    puts 'There is no active accounts, do you want to be the first?[y/n]'
-    gets.chomp == 'y'
   end
 
   def no_cards
@@ -127,10 +127,10 @@ class Console
   def credit_card_type
     puts <<~MENU_OF_CARD_TYPES
       You could create one of 3 card types
-    - Usual card. 2% tax on card INCOME. 20$ tax on SENDING money from this card. 5% tax on WITHDRAWING money. For creation this card - press `usual`
-    - Capitalist card. 10$ tax on card INCOME. 10% tax on SENDING money from this card. 4$ tax on WITHDRAWING money. For creation this card - press `capitalist`
-    - Virtual card. 1$ tax on card INCOME. 1$ tax on SENDING money from this card. 12% tax on WITHDRAWING money. For creation this card - press `virtual`
-    - For exit - press `exit`
+      - Usual card. 2% tax on card INCOME. 20$ tax on SENDING money from this card. 5% tax on WITHDRAWING money. For creation this card - press `usual`
+      - Capitalist card. 10$ tax on card INCOME. 10% tax on SENDING money from this card. 4$ tax on WITHDRAWING money. For creation this card - press `capitalist`
+      - Virtual card. 1$ tax on card INCOME. 1$ tax on SENDING money from this card. 12% tax on WITHDRAWING money. For creation this card - press `virtual`
+      - For exit - press `exit`
     MENU_OF_CARD_TYPES
     gets.chomp
     # not forget to add loop

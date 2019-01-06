@@ -63,9 +63,7 @@ class Account
     return @console.no_cards unless cards_array.any?
 
     answer = @console.first_ask_destroy_card(cards_array)
-    return if answer == 'exit'
-
-    answer = answer&.to_i
+    answer == 'exit' ? return : answer = answer&.to_i
     index = answer - 1
     return @console.wrong_number unless answer.between?(0, cards_array.length)
 
@@ -171,6 +169,68 @@ class Account
       @current_account.cards[card_index - 1] = current_card
       save_account
       return @console.payment_result(amount, current_card.card, operation)
+    end
+  end
+
+  def send_money
+    cards_array = @current_account.cards
+    return @console.no_cards unless cards_array.any?
+
+    @console.menu_with_cards(cards_array, 'sending')
+    answer = gets.chomp
+    answer == 'exit' ? exit : list_number = answer&.to_i
+    return puts 'Choose correct card' unless list_number.between?(0, cards_array.length)
+
+    pan = @console.take_card_number
+    return puts 'Please, input correct number of card' unless pan.length == 16
+
+    return puts "There is no card with number #{pan}\n" unless find_card_in_list(pan).any?
+
+    # recipient_card = find_card_in_list(pan).first
+    # sender_card = cards_array[list_number - 1]
+    sending_loop(cards_array[list_number - 1], find_card_in_list(pan).first, list_number, pan)
+  end
+
+  def find_card_in_list(pan)
+    all_cards = accounts.map(&:cards).flatten
+    all_cards.select { |card| card.card.number == pan }
+  end
+
+  def sending_loop(sender_card, recipient_card, list_number, pan)
+    loop do
+      amount = @console.input_amount_to('withdraw')
+      next @console.wrong_number if amount.negative?
+
+      sender_balance = calculate_new_balance(sender_card.card, amount, 'send')
+      next @console.no_money_on_balance if sender_balance.negative?
+
+      recipient_balance = calculate_new_balance(recipient_card.card, amount, 'put')
+      next @console.no_enough_money if recipient_card.card.put_tax(amount) >= amount
+
+      sender_card.card.balance = sender_balance
+      @current_account.cards[list_number - 1] = sender_card
+      new_accounts = save_all_accounts(pan, recipient_balance)
+      store_accounts(new_accounts)
+      @console.payment_result(amount, sender_card.card, 'put')
+      @console.payment_result(amount, recipient_card.card, 'put')
+      break
+    end
+  end
+
+  def save_all_accounts(pan, recipient_balance)
+    accounts.each_with_object([]) do |account, array|
+      array.push(@current_account) if account.login == @current_account.login
+
+      if account.cards.map { |card| card.card.number }.include? pan
+        recipient = account
+        new_recipient_cards = recipient.cards.each_with_object([]) do |card, array_recipients|
+          card.card.balance = recipient_balance if card.card.number == pan
+          array_recipients.push(card)
+        end
+
+        recipient.cards = new_recipient_cards
+        array.push(recipient)
+      end
     end
   end
 
