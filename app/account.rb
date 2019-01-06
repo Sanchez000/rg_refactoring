@@ -24,7 +24,7 @@ class Account
         puts "- #{card.card.number}, #{card.card.type}"
       end
     else
-      puts "There is no active cards!\n"
+      @console.no_cards
       puts @current_account
     end
   end
@@ -60,7 +60,7 @@ class Account
 
   def destroy_card
     cards_array = @current_account.cards
-    return @console.no_cards unless @current_account.cards.any?
+    return @console.no_cards unless cards_array.any?
 
     answer = @console.first_ask_destroy_card(cards_array)
     return if answer == 'exit'
@@ -76,9 +76,8 @@ class Account
   end
 
   def save_account
-    new_accounts = []
-    accounts.each do |account|
-      account.login == @current_account.login ? new_accounts.push(@current_account) : new_accounts.push(account)
+    new_accounts = accounts.each_with_object([]) do |account, array|
+      account.login == @current_account.login ? array.push(@current_account) : array.push(account)
     end
     store_accounts(new_accounts)
   end
@@ -122,46 +121,27 @@ class Account
     YAML.load_file(PATH_TO_DB)
   end
 
-  def cards_present?
-    return @console.no_cards unless @current_account.cards.any?
-  end
-
-  def put_money
-    cards_array = @current_account.cards
-    return @console.no_cards unless cards_array.any?
-
-    @console.menu_with_cards(cards_array, 'putting')
-    loop do
-      answer = gets.chomp
-      break if answer == 'exit'
-
-      list_number = answer&.to_i
-      return @console.wrong_number unless list_number.between?(0, cards_array.length)
-
-      get_amount(list_number, cards_array[list_number - 1])
-    end
-  end
-
-  def get_amount(card_index, current_card)
-    loop do
-      amount = @console.input_amount_to('put on your card')
-      return puts 'You must input correct amount of money' if amount.negative?
-
-      tax = current_card.card.put_tax(amount)
-      return puts 'Your tax is higher than input amount' if tax >= amount
-
-      current_card.card.balance = current_card.card.balance + amount - tax
-      @current_account.cards[card_index - 1] = current_card
-      save_account
-      return @console.payment_result(amount, current_card.card, 'put')
+  def calculate_new_balance(card, amount, operation)
+    case operation
+    when 'withdraw' then card.balance - amount - card.withdraw_tax(amount)
+    when 'send' then card.balance - amount - card.sender_tax(amount)
+    when 'put' then card.balance + amount - card.put_tax(amount)
     end
   end
 
   def withdraw_money
+    processing_transaction('withdraw')
+  end
+
+  def put_money
+    processing_transaction('put')
+  end
+
+  def processing_transaction(operation)
     cards_array = @current_account.cards
     return @console.no_cards unless cards_array.any?
 
-    @console.menu_with_cards(cards_array, 'withdrawing')
+    @console.menu_with_cards(cards_array, operation)
 
     loop do
       answer = gets.chomp
@@ -170,24 +150,27 @@ class Account
       list_number = answer&.to_i
       return @console.wrong_number unless list_number.between?(0, cards_array.length)
 
-      get_amount_to_withdraw(list_number, cards_array[list_number - 1])
+      take_amount_to(operation, list_number, cards_array[list_number - 1])
     end
   end
 
-  def get_amount_to_withdraw(card_index, current_card)
+  def take_amount_to(operation, card_index, current_card)
     loop do
-      amount = @console.input_amount_to('withdraw')
-      amount = amount&.to_i
+      amount = @console.input_amount_to(operation)
+      return @console.input_correct_amount if amount.negative?
 
-      return puts 'You must input correct amount of $' unless amount.positive?
+      new_balance = calculate_new_balance(current_card.card, amount, operation)
 
-      money_left = current_card.card.balance - amount - current_card.card.withdraw_tax(amount)
-      return puts "You don't have enough money on card for such operation" unless money_left.positive?
+      if operation == 'put'
+        return @console.higher_tax if current_card.card.put_tax(amount) >= amount
+      else
+        return @console.no_money_on_balance unless new_balance.positive?
+      end
 
-      current_card.card.balance = money_left
+      current_card.card.balance = new_balance
       @current_account.cards[card_index - 1] = current_card
       save_account
-      return @console.payment_result(amount, current_card.card, 'withdraw')
+      return @console.payment_result(amount, current_card.card, operation)
     end
   end
 

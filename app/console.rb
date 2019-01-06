@@ -66,8 +66,13 @@ class Console
   end
 
   def menu_with_cards(cards, option)
-    puts "Choose the card for #{option}:" # putting
+    puts "Choose the card for #{option}ing:"
     listing_cards(cards)
+  end
+
+  def take_card_number
+    puts 'Enter the recipient card:'
+    gets.chomp
   end
 
   def are_you_sure?(what)
@@ -77,6 +82,22 @@ class Console
 
   def wrong_number
     puts "You entered wrong number!\n"
+  end
+
+  def no_enough_money
+    puts 'There is no enough money on sender card'
+  end
+
+  def no_money_on_balance
+    puts "You don't have enough money on card for such operation"
+  end
+
+  def higher_tax
+    puts 'Your tax is higher than input amount'
+  end
+
+  def input_correct_amount
+    puts 'You must input correct amount of money'
   end
 
   def create_account?
@@ -89,6 +110,7 @@ class Console
   end
 
   def input_amount_to(operation)
+    operation = 'put on your card' if operation == 'put'
     puts "Input the amount of money you want to #{operation}"
     gets.chomp&.to_i
   end
