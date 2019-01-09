@@ -1,0 +1,9 @@
+en:
+  no_accounts: "There is no account with given credentials"
+  wrong_number: "You entered wrong number!\n"
+  no_enough_money: "There is no enough money on sender card"
+  no_money_on_balance: "You don't have enough money on card for such operation"
+  higher_tax: "Your tax is higher than input amount"
+  input_correct_amount: "You must input correct amount of money"
+  no_cards: "There is no active cards!\n"
+  wrong_command: "Wrong command. Try again!\n"

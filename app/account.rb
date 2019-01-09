@@ -19,14 +19,9 @@ class Account
   end
 
   def show_cards
-    if @current_account.cards.any?
-      @current_account.cards.each do |card|
-        puts "- #{card.card.number}, #{card.card.type}"
-      end
-    else
-      @console.no_cards
-      puts @current_account
-    end
+    return @console.output(:no_cards) unless @current_account.cards.any?
+
+    @console.expand_cards_list(@current_account.cards)
   end
 
   def create
@@ -52,24 +47,22 @@ class Account
   end
 
   def create_card
-    type = @console.credit_card_type
-    new_cards = @current_account.cards << CreditCard.new(type)
-    @current_account.cards = new_cards
+    @current_account.cards << CreditCard.new(@console.credit_card_type)
     save_account
   end
 
   def destroy_card
     cards_array = @current_account.cards
-    return @console.no_cards unless cards_array.any?
+    return @console.output(:no_cards) unless cards_array.any?
 
     answer = @console.first_ask_destroy_card(cards_array)
-    answer == 'exit' ? return : answer = answer&.to_i
-    index = answer - 1
-    return @console.wrong_number unless answer.between?(0, cards_array.length)
+    return if answer == 'exit'
 
-    return unless @console.are_you_sure?("delete #{cards_array[index].card.number}")
+    return @console.output(:wrong_number) unless answer.between?(0, cards_array.length)
 
-    cards_array.delete_at(index)
+    return unless @console.are_you_sure?("delete #{cards_array[answer - 1].card.number}")
+
+    cards_array.delete_at(answer - 1)
     save_account
   end
 
@@ -86,7 +79,7 @@ class Account
 
       login = @console.interviewer('login')
       password = @console.interviewer('password')
-      next @console.no_accounts unless find_account_by_login(login, password).any?
+      next @console.output(:no_accounts) unless find_account_by_login(login, password).any?
 
       @current_account = find_account_by_login(login, password).first
       break
@@ -137,7 +130,7 @@ class Account
 
   def processing_transaction(operation)
     cards_array = @current_account.cards
-    return @console.no_cards unless cards_array.any?
+    return @console.output(:no_cards) unless cards_array.any?
 
     @console.menu_with_cards(cards_array, operation)
 
@@ -146,7 +139,7 @@ class Account
       break if answer == 'exit'
 
       list_number = answer&.to_i
-      return @console.wrong_number unless list_number.between?(0, cards_array.length)
+      return @console.output(:wrong_number) unless list_number.between?(0, cards_array.length)
 
       take_amount_to(operation, list_number, cards_array[list_number - 1])
     end
@@ -155,14 +148,14 @@ class Account
   def take_amount_to(operation, card_index, current_card)
     loop do
       amount = @console.input_amount_to(operation)
-      return @console.input_correct_amount if amount.negative?
+      return @console.output(:input_correct_amount) if amount.negative?
 
       new_balance = calculate_new_balance(current_card.card, amount, operation)
 
       if operation == 'put'
-        return @console.higher_tax if current_card.card.put_tax(amount) >= amount
+        return @console.output(:higher_tax) if current_card.card.put_tax(amount) >= amount
       else
-        return @console.no_money_on_balance unless new_balance.positive?
+        return @console.output(:no_money_on_balance) unless new_balance.positive?
       end
 
       current_card.card.balance = new_balance
@@ -174,7 +167,7 @@ class Account
 
   def send_money
     cards_array = @current_account.cards
-    return @console.no_cards unless cards_array.any?
+    return @console.output(:no_cards) unless cards_array.any?
 
     @console.menu_with_cards(cards_array, 'sending')
     answer = gets.chomp
@@ -186,8 +179,6 @@ class Account
 
     return puts "There is no card with number #{pan}\n" unless find_card_in_list(pan).any?
 
-    # recipient_card = find_card_in_list(pan).first
-    # sender_card = cards_array[list_number - 1]
     sending_loop(cards_array[list_number - 1], find_card_in_list(pan).first, list_number, pan)
   end
 
@@ -199,13 +190,13 @@ class Account
   def sending_loop(sender_card, recipient_card, list_number, pan)
     loop do
       amount = @console.input_amount_to('withdraw')
-      next @console.wrong_number if amount.negative?
+      next @console.output(:wrong_number) if amount.negative?
 
       sender_balance = calculate_new_balance(sender_card.card, amount, 'send')
-      next @console.no_money_on_balance if sender_balance.negative?
+      next @console.output(:no_money_on_balance) if sender_balance.negative?
 
       recipient_balance = calculate_new_balance(recipient_card.card, amount, 'put')
-      next @console.no_enough_money if recipient_card.card.put_tax(amount) >= amount
+      next @console.output(:no_enough_money) if recipient_card.card.put_tax(amount) >= amount
 
       sender_card.card.balance = sender_balance
       @current_account.cards[list_number - 1] = sender_card

@@ -27,19 +27,21 @@ class Console
     puts main_menu_message
 
     loop do
-      command = gets.chomp
-      case command
-      when 'SC' then @account.show_cards
-      when 'CC' then @account.create_card # .card.create move to separete class Card
-      when 'DC' then @account.destroy_card
-      when 'PM' then @account.put_money
-      when 'WM' then @account.withdraw_money
-      when 'SM' then @account.send_money
-      when 'DA' then @account.destroy && exit
-      when 'exit' then exit
-      else
-        puts "Wrong command. Try again!\n"
-      end
+      menu_select_option
+    end
+  end
+
+  def menu_select_option
+    case gets.chomp
+    when 'SC' then @account.show_cards
+    when 'CC' then @account.create_card
+    when 'DC' then @account.destroy_card
+    when 'PM' then @account.put_money
+    when 'WM' then @account.withdraw_money
+    when 'SM' then @account.send_money
+    when 'DA' then @account.destroy && exit
+    when 'exit' then exit
+    else puts I18n.t(:wrong_command)
     end
   end
 
@@ -48,10 +50,16 @@ class Console
     gets.chomp
   end
 
+  def take_card_number
+    puts 'Enter the recipient card:'
+    gets.chomp
+  end
+
   def first_ask_destroy_card(cards_array)
     puts 'If you want to delete:'
     listing_cards(cards_array)
-    gets.chomp
+    answer = gets.chomp
+    answer == 'exit' ? answer : answer&.to_i
   end
 
   def listing_cards(cards_array)
@@ -61,18 +69,19 @@ class Console
     puts "press `exit` to exit\n"
   end
 
+  def expand_cards_list(cards_array)
+    cards_array.each do |card|
+      puts "- #{card.card.number}, #{card.card.type}"
+    end
+  end
+
   def menu_with_cards(cards, option)
     puts "Choose the card for #{option}ing:"
     listing_cards(cards)
   end
 
-  def take_card_number
-    puts 'Enter the recipient card:'
-    gets.chomp
-  end
-
   def are_you_sure?(what)
-    puts "Are you sure you want to #{what} ?[y/n]" # delete #{card_number}?[y/n]
+    puts "Are you sure you want to #{what} ?[y/n]"
     gets.chomp == 'y'
   end
 
@@ -81,32 +90,8 @@ class Console
     gets.chomp == 'y'
   end
 
-  def no_accounts
-    puts 'There is no account with given credentials'
-  end
-
-  def wrong_number
-    puts "You entered wrong number!\n"
-  end
-
-  def no_enough_money
-    puts 'There is no enough money on sender card'
-  end
-
-  def no_money_on_balance
-    puts "You don't have enough money on card for such operation"
-  end
-
-  def higher_tax
-    puts 'Your tax is higher than input amount'
-  end
-
-  def input_correct_amount
-    puts 'You must input correct amount of money'
-  end
-
-  def no_cards
-    puts "There is no active cards!\n"
+  def output(command)
+    puts I18n.t(command)
   end
 
   def input_amount_to(operation)
