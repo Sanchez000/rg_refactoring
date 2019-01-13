@@ -1,48 +1,217 @@
 require_relative 'account'
+require_relative 'credit_cards'
+require_relative 'transaction'
 
 class Console
-  HELLO_MESSAGE = <<~HELLO_MESSAGE.freeze
-    Hello, we are RubyG bank!
-    - If you want to create account - press `create`
-    - If you want to load account - press `load`
-    - If you want to exit - press `exit`
-  HELLO_MESSAGE
+  attr_reader :account
+
+  YES = 'y'.freeze
+  START_COMMANDS = {
+    create: 'create',
+    load: 'load'
+  }.freeze
 
   def initialize
-    @account = Account.new(self)
+    @errors = []
   end
 
   def hello
-    puts HELLO_MESSAGE
-
+    output(:hello_message)
     case gets.chomp
-    when 'create' then @account.create
-    when 'load' then @account.load
+    when START_COMMANDS[:create] then create_account
+    when START_COMMANDS[:load] then load_account
     else
       exit
     end
   end
 
+  def create_account
+    account = Account.new
+    loop do
+      setting_parameters(account)
+      break if account.valid?
+
+      account.errors.each { |error| puts error }
+    end
+    account.save
+    @current_account = account
+    main_menu
+  end
+
+  def setting_parameters(account)
+    account.name = interviewer('name')
+    account.age = interviewer('age').to_i
+    account.login = interviewer('login')
+    account.password = interviewer('password')
+  end
+
+  def load_account
+    loop do
+      return create_the_first_account unless Account.accounts.any?
+
+      login = interviewer('login')
+      password = interviewer('password')
+      @current_account = Account.find_by_credetials(login, password)
+      output(:no_accounts) unless @current_account
+
+      break if @current_account
+    end
+    main_menu
+  end
+
+  def create_the_first_account
+    want_create_account? ? create_account : hello
+  end
+
   def main_menu
-    puts main_menu_message
+    puts I18n.t(:main_menu_message, name: @current_account.name)
 
     loop do
-      menu_select_option
+      option = gets.chomp
+      exit if option == 'exit'
+
+      menu_select_option(option)
     end
   end
 
-  def menu_select_option
-    case gets.chomp
-    when 'SC' then @account.show_cards
-    when 'CC' then @account.create_card
-    when 'DC' then @account.destroy_card
-    when 'PM' then @account.put_money
-    when 'WM' then @account.withdraw_money
-    when 'SM' then @account.send_money
-    when 'DA' then @account.destroy && exit
-    when 'exit' then exit
-    else puts I18n.t(:wrong_command)
+  def menu_select_option(option)
+    # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity
+    case option
+    when 'SC' then show_cards
+    when 'CC' then create_card
+    when 'DC' then destroy_card
+    when 'PM' then put_money
+    when 'WM' then withdraw_money
+    when 'SM' then send_money
+    when 'DA' then destroy_account && exit
+    else
+      output(:wrong_command)
     end
+    # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity
+  end
+
+  def show_cards
+    return output(:no_cards) unless @current_account.cards.any?
+
+    expand_cards_list(@current_account.cards)
+  end
+
+  def create_card
+    loop do
+      card_type = choose_credit_card_type
+      return puts I18n.t(:wrong_card_type) unless CreditCards::TYPES.key?(card_type)
+
+      new_cards = @current_account.cards << CreditCards.new(card_type)
+      @current_account.cards = new_cards
+      @current_account.save
+      break
+    end
+  end
+
+  def select_card(cards_array)
+    cards_array.each_with_index do |card, index|
+      puts "- #{card.number}, #{card.type}, press #{index + 1}"
+    end
+    output(:press_exit)
+    answer = gets.chomp
+    answer == 'exit' ? false : answer.to_i
+  end
+
+  def withdraw_money
+    output(:choose_card_withdrawing)
+    return output(:no_cards) unless @current_account.cards.any?
+
+    list_number = select_card(@current_account.cards)
+    return unless list_number
+
+    return output(:wrong_number) unless list_number.between?(0, @current_account.cards.length)
+
+    current_card = @current_account.cards[list_number - 1]
+    withdraw_amount(current_card)
+  end
+
+  def withdraw_amount(current_card)
+    transaction = Transaction.new(current_card)
+    run_withdraw(transaction)
+    @current_account.save
+    puts I18n.t(:payment_result, amount: transaction.amount,
+                                 number: current_card.number,
+                                 balance: current_card.balance,
+                                 tax_amount: transaction.tax_amount)
+  end
+
+  def run_withdraw(transaction)
+    loop do
+      puts I18n.t(:input_amount, operation: 'withdraw')
+      transaction.withdraw_money(gets.chomp)
+      break if transaction.errors.empty?
+
+      transaction.errors.each { |error| puts error }
+    end
+  end
+
+  def put_money
+    output(:choose_card)
+    return output(:no_cards) unless @current_account.cards.any?
+
+    list_number = select_card(@current_account.cards)
+    return unless list_number
+
+    return output(:wrong_number) unless list_number.between?(0, @current_account.cards.length)
+
+    current_card = @current_account.cards[list_number - 1]
+    put_amount(current_card)
+  end
+
+  def put_amount(current_card)
+    transaction = Transaction.new(current_card)
+    run_put(transaction)
+    @current_account.save
+    puts I18n.t(:payment_result, amount: transaction.amount,
+                                 number: current_card.number,
+                                 balance: current_card.balance,
+                                 tax_amount: transaction.tax_amount)
+  end
+
+  def run_put(transaction)
+    loop do
+      puts I18n.t(:input_amount, operation: 'put on your card')
+      transaction.put_money(gets.chomp)
+      break if transaction.errors.empty?
+
+      transaction.errors.each { |error| puts error }
+    end
+  end
+
+  def destroy_card
+    return output(:no_cards) unless @current_account.cards.any?
+
+    confirm_delete
+  end
+
+  def confirm_delete
+    loop do
+      output(:want_delete?)
+      list_number = select_card(@current_account.cards)
+      return unless list_number
+
+      return output(:wrong_number) unless list_number.between?(0, @current_account.cards.length)
+
+      card_number = @current_account.cards[list_number - 1].number
+      return unless are_you_sure?("delete #{card_number}")
+
+      delete_card(card_number)
+      break
+    end
+  end
+
+  def delete_card(card_number)
+    @current_account.cards.delete_if { |card| card.number = card_number }
+    @current_account.save
+  end
+
+  def destroy_account
+    @current_account.destroy(@current_account.login) if are_you_sure?('destroy account')
   end
 
   def interviewer(personal_data)
@@ -51,90 +220,32 @@ class Console
   end
 
   def take_card_number
-    puts 'Enter the recipient card:'
+    output(:recipient_card)
     gets.chomp
   end
 
-  def first_ask_destroy_card(cards_array)
-    puts 'If you want to delete:'
-    listing_cards(cards_array)
-    answer = gets.chomp
-    answer == 'exit' ? answer : answer&.to_i
-  end
-
-  def listing_cards(cards_array)
-    cards_array.each_with_index do |card, index|
-      puts "- #{card.card.number}, #{card.card.type}, press #{index + 1}"
-    end
-    puts "press `exit` to exit\n"
+  def choose_credit_card_type
+    output(:menu_of_card_types)
+    gets.chomp
   end
 
   def expand_cards_list(cards_array)
     cards_array.each do |card|
-      puts "- #{card.card.number}, #{card.card.type}"
+      puts "- #{card.number}, #{card.type}"
     end
-  end
-
-  def menu_with_cards(cards, option)
-    puts "Choose the card for #{option}ing:"
-    listing_cards(cards)
   end
 
   def are_you_sure?(what)
     puts "Are you sure you want to #{what} ?[y/n]"
-    gets.chomp == 'y'
+    gets.chomp == YES
   end
 
-  def create_account?
-    puts 'There is no active accounts, do you want to be the first?[y/n]'
-    gets.chomp == 'y'
+  def want_create_account?
+    output(:create_first_account)
+    gets.chomp == YES
   end
 
   def output(command)
     puts I18n.t(command)
-  end
-
-  def input_amount_to(operation)
-    operation = 'put on your card' if operation == 'put'
-    puts "Input the amount of money you want to #{operation}"
-    gets.chomp&.to_i
-  end
-
-  def payment_result(amount, card, operation_type)
-    case operation_type
-    when 'put' then puts "Money #{amount} was put on #{card.number}.Balance: #{card.balance}.
-      Tax: #{card.put_tax(amount)}"
-    when 'withdraw' then puts "Money #{amount} withdrawed from #{card.number}$. Money left: #{card.balance}$.
-      Tax: #{card.withdraw_tax(amount)}$"
-    end
-  end
-
-  def credit_card_type
-    puts <<~MENU_OF_CARD_TYPES
-      You could create one of 3 card types
-      - Usual card. 2% tax on card INCOME. 20$ tax on SENDING money from this card. 5% tax on WITHDRAWING money. For creation this card - press `usual`
-      - Capitalist card. 10$ tax on card INCOME. 10% tax on SENDING money from this card. 4$ tax on WITHDRAWING money. For creation this card - press `capitalist`
-      - Virtual card. 1$ tax on card INCOME. 1$ tax on SENDING money from this card. 12% tax on WITHDRAWING money. For creation this card - press `virtual`
-      - For exit - press `exit`
-    MENU_OF_CARD_TYPES
-    gets.chomp
-    # not forget to add loop
-  end
-
-  private
-
-  def main_menu_message
-    <<~MAIN_MENU_MESSAGE
-      \nWelcome, #{@account.current_account.name}
-      If you want to:
-      - show all cards - press SC
-      - create card - press CC
-      - destroy card - press DC
-      - put money on card - press PM
-      - withdraw money on card - press WM
-      - send money to another card  - press SM
-      - destroy account - press `DA`
-      - exit from account - press `exit`
-    MAIN_MENU_MESSAGE
   end
 end

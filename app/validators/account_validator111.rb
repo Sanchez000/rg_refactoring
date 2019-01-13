@@ -1,3 +1,4 @@
+require 'pry'
 module Validators
   class Account
     attr_reader :errors

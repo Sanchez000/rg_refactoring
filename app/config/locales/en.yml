@@ -7,3 +7,35 @@ en:
   input_correct_amount: "You must input correct amount of money"
   no_cards: "There is no active cards!\n"
   wrong_command: "Wrong command. Try again!\n"
+  hello_message: "Hello, we are RubyG bank!\n
+                - If you want to create account - press `create`\n
+                - If you want to load account - press `load`\n
+                - If you want to exit - press `exit`\n"
+  name_capitalize: "Your name must not be empty and starts with first upcase letter"
+  wrong_length: "Your %{name} must be greeter then %{min} and lower then %{max} symbols"
+  account_exist: "Such account is already exists"
+  not_present: "%{name} must present"
+  main_menu_message: "  \nWelcome, %{name}
+                      If you want to:\n
+                      - show all cards - press SC\n
+                      - create card - press CC\n
+                      - destroy card - press DC\n
+                      - put money on card - press PM\n
+                      - withdraw money on card - press WM\n
+                      - send money to another card  - press SM\n
+                      - destroy account - press `DA`\n
+                      - exit from account - press `exit`"
+  menu_of_card_types: "You could create one of 3 card types\n
+                        - Usual card. 2% tax on card INCOME. 20$ tax on SENDING money from this card. 5% tax on WITHDRAWING money. For creation this card - press `usual`\n
+                        - Capitalist card. 10$ tax on card INCOME. 10% tax on SENDING money from this card. 4$ tax on WITHDRAWING money. For creation this card - press `capitalist`\n
+                        - Virtual card. 1$ tax on card INCOME. 1$ tax on SENDING money from this card. 12% tax on WITHDRAWING money. For creation this card - press `virtual`\n
+                        - For exit - press `exit`"
+  create_first_account: "There is no active accounts, do you want to be the first?[y/n]"
+  wrong_card_type: "Wrong card type. Try again!\n"
+  want_delete?: "If you want to delete:"
+  press_exit: "press `exit` to exit\n"
+  recipient_card: "Enter the recipient card:"
+  payment_result: "Money %{amount} was put on %{number}. Balance: %{balance}. Tax: %{tax_amount}"
+  choose_card: "Choose the card for %putting:"
+  choose_card_withdrawing: "Choose the card for withdrawing:"
+  input_amount: "Input the amount of money you want to %{operation}"
