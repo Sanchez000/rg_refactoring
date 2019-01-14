@@ -5,7 +5,7 @@
   - !ruby/object:CreditCards
     type: usual
     number: '8537708312732652'
-    balance: 50.0
+    balance: 43.0
   name: Artem
   age: 29
   login: test

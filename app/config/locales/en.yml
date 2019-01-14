@@ -36,6 +36,5 @@ en:
   press_exit: "press `exit` to exit\n"
   recipient_card: "Enter the recipient card:"
   payment_result: "Money %{amount} was put on %{number}. Balance: %{balance}. Tax: %{tax_amount}"
-  choose_card: "Choose the card for %putting:"
-  choose_card_withdrawing: "Choose the card for withdrawing:"
+  choose_card: "Choose the card for %{operation}:"
   input_amount: "Input the amount of money you want to %{operation}"
