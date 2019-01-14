@@ -1,9 +1,6 @@
-require_relative 'account'
-require_relative 'credit_cards'
-require_relative 'transaction'
-require_relative 'console_helper'
-require_relative 'console_for_cards'
-require_relative 'console_for_money'
+require_relative 'console_helpers/console_helper'
+require_relative 'console_helpers/console_for_cards'
+require_relative 'console_helpers/console_for_money'
 
 class Console
   include ConsoleHelper

@@ -1,6 +1,3 @@
-require 'yaml'
-require 'pry'
-
 class Account
   attr_accessor :name, :login, :age, :password, :errors, :cards
   PATH_TO_DB = 'accounts.yml'.freeze
