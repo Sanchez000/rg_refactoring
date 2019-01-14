@@ -1,12 +1,19 @@
 ---
 - !ruby/object:Account
   errors: []
+  cards:
+  - !ruby/object:CreditCards
+    type: usual
+    number: '8537708312732652'
+    balance: 50.0
   name: Artem
   age: 29
   login: test
   password: '123456'
-  cards:
-  - !ruby/object:CreditCards
-    type: usual
-    number: '4670791561775476'
-    balance: 28.299999999999997
+- !ruby/object:Account
+  errors: []
+  cards: []
+  name: Artem
+  age: 29
+  login: test2
+  password: '123456'
